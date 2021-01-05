@@ -48,8 +48,10 @@ def zaznajEmocije(folderPath, gui_queue):
     dataValenceArousalDf.attrs['folderPath'] = folderPath
     dataValenceArousalDf.to_pickle('pickle/predicted_valence_arousal_GUI.pkl')
     gui_queue.put('** Done **')
+    print(dataValenceArousalDf.attrs['folderPath'] )
 
-def recomend(rslt_df, window, event):
+
+def recomend(rslt_df, window, event, folderPath):
     window.Element('text1').Update(value = '' )
     window.Element('text2').Update(value = '' )
     window.Element('text3').Update(value = '' )
@@ -58,15 +60,15 @@ def recomend(rslt_df, window, event):
     
     if(rslt_df.empty):
         txterr = 'No music in dataset fits selected emotion.'
-        print(txterr)
+        #print(txterr)
         window.Element('textEmotion').Update(value='Selected emotion: '+event)
         window.Element('text1').Update(value=txterr)
     else:
         # priporoci 5 pesmi (random)
         #print(rslt_df )
         
-        window.Element('textEmotion').Update(value='Selected emotion: '+event + ' Songs from folder: '+ dataValenceArousalDf.attrs['folderPath'] )
-        
+        window.Element('textEmotion').Update(value='Selected emotion: '+event)
+        print(' Songs from folder: '+folderPath)
         if(rslt_df.shape[0] > 5):
             all_samples = rslt_df.sample(5)
             #print(all_samples)
@@ -151,49 +153,52 @@ def the_gui():
                 window.Refresh()
                 #print('Selected folder: '+values[0] +'\n Wait, this might take a long time!')
                 threading.Thread(target=zaznajEmocije, args=( values[0], gui_queue, ), daemon=True).start()
+                
             except Exception as e:
                 print('Error starting work thread. Did you input a valid # of seconds? You entered: %s' % values['_SECONDS_'])
-                
-        elif(event == 'Excited'):
-            # valence > 0 | arousal > 0 | valence < arousal
-            rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] > 0) &
-            (dataValenceArousalDf['arousal'] > 0) & (dataValenceArousalDf['valence'] < dataValenceArousalDf['arousal']) ]
-            recomend(rslt_df, window, event)
-        elif(event == 'Happy'):
-            # valence > 0 | arousal > 0 | valence > arousal
-            rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] > 0) &
-            (dataValenceArousalDf['arousal'] > 0) & (dataValenceArousalDf['valence'] > dataValenceArousalDf['arousal']) ]
-            recomend(rslt_df, window, event)
-        elif(event == 'Pleased'):
-            # valence > 0 | arousal < 0 | valence > -arousal
-            rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] > 0) &
-            (dataValenceArousalDf['arousal'] < 0) & (dataValenceArousalDf['valence'] > -dataValenceArousalDf['arousal']) ]
-            recomend(rslt_df, window, event)
-        elif(event == 'Calm'):
-            # valence > 0 | arousal < 0 | valence < -arousal
-            rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] > 0) &
-            (dataValenceArousalDf['arousal'] < 0) & (dataValenceArousalDf['valence'] < -dataValenceArousalDf['arousal']) ]
-            recomend(rslt_df, window, event)
-        elif(event == 'Bored'):
-            # valence < 0 | arousal < 0 | valence > arousal
-            rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] < 0) &
-            (dataValenceArousalDf['arousal'] < 0) & (dataValenceArousalDf['valence'] > dataValenceArousalDf['arousal']) ]
-            recomend(rslt_df, window, event)
-        elif(event == 'Sad'):
-            # valence < 0 | arousal < 0 | valence < arousal
-            rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] < 0) &
-            (dataValenceArousalDf['arousal'] < 0) & (dataValenceArousalDf['valence'] < dataValenceArousalDf['arousal']) ]
-            recomend(rslt_df, window, event)
-        elif(event == 'Frustrated'):
-            # valence < 0 | arousal > 0 | valence < -arousal
-            rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] < 0) &
-            (dataValenceArousalDf['arousal'] > 0) & (dataValenceArousalDf['valence'] < -dataValenceArousalDf['arousal']) ]
-            recomend(rslt_df, window, event)
-        elif(event == 'Angry'):
-            # valence < 0 | arousal > 0 | valence > -arousal
-            rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] < 0) &
-            (dataValenceArousalDf['arousal'] > 0) & (dataValenceArousalDf['valence'] > -dataValenceArousalDf['arousal']) ]
-            recomend(rslt_df, window, event)
+        else:
+            dataValenceArousalDf = pd.read_pickle('pickle/predicted_valence_arousal_GUI.pkl')
+            
+            if(event == 'Excited'):
+                # valence > 0 | arousal > 0 | valence < arousal
+                rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] > 0) &
+                (dataValenceArousalDf['arousal'] > 0) & (dataValenceArousalDf['valence'] < dataValenceArousalDf['arousal']) ]
+                recomend(rslt_df, window, event, dataValenceArousalDf.attrs['folderPath'])
+            elif(event == 'Happy'):
+                # valence > 0 | arousal > 0 | valence > arousal
+                rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] > 0) &
+                (dataValenceArousalDf['arousal'] > 0) & (dataValenceArousalDf['valence'] > dataValenceArousalDf['arousal']) ]
+                recomend(rslt_df, window, event, dataValenceArousalDf.attrs['folderPath'])
+            elif(event == 'Pleased'):
+                # valence > 0 | arousal < 0 | valence > -arousal
+                rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] > 0) &
+                (dataValenceArousalDf['arousal'] < 0) & (dataValenceArousalDf['valence'] > -dataValenceArousalDf['arousal']) ]
+                recomend(rslt_df, window, event, dataValenceArousalDf.attrs['folderPath'])
+            elif(event == 'Calm'):
+                # valence > 0 | arousal < 0 | valence < -arousal
+                rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] > 0) &
+                (dataValenceArousalDf['arousal'] < 0) & (dataValenceArousalDf['valence'] < -dataValenceArousalDf['arousal']) ]
+                recomend(rslt_df, window, event, dataValenceArousalDf.attrs['folderPath'])
+            elif(event == 'Bored'):
+                # valence < 0 | arousal < 0 | valence > arousal
+                rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] < 0) &
+                (dataValenceArousalDf['arousal'] < 0) & (dataValenceArousalDf['valence'] > dataValenceArousalDf['arousal']) ]
+                recomend(rslt_df, window, event, dataValenceArousalDf.attrs['folderPath'])
+            elif(event == 'Sad'):
+                # valence < 0 | arousal < 0 | valence < arousal
+                rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] < 0) &
+                (dataValenceArousalDf['arousal'] < 0) & (dataValenceArousalDf['valence'] < dataValenceArousalDf['arousal']) ]
+                recomend(rslt_df, window, event, dataValenceArousalDf.attrs['folderPath'])
+            elif(event == 'Frustrated'):
+                # valence < 0 | arousal > 0 | valence < -arousal
+                rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] < 0) &
+                (dataValenceArousalDf['arousal'] > 0) & (dataValenceArousalDf['valence'] < -dataValenceArousalDf['arousal']) ]
+                recomend(rslt_df, window, event, dataValenceArousalDf.attrs['folderPath'])
+            elif(event == 'Angry'):
+                # valence < 0 | arousal > 0 | valence > -arousal
+                rslt_df = dataValenceArousalDf[ (dataValenceArousalDf['valence'] < 0) &
+                (dataValenceArousalDf['arousal'] > 0) & (dataValenceArousalDf['valence'] > -dataValenceArousalDf['arousal']) ]
+                recomend(rslt_df, window, event, dataValenceArousalDf.attrs['folderPath'])
         
         # --------------- Check for incoming messages from threads  ---------------
         try:
